@@ -40,7 +40,7 @@ The module provides a set of assertion functions for verifying variables
 ```
 
 ```js
-	if(mustBe.is.normalObject{({})){
+	if(mustBe.is.normalObject({})){
 		...
 	}
 	if(mustBe.is.notEmpty.normalObject({foo: 'bar'})){
