@@ -22,8 +22,8 @@ The module provides a set of assertion functions for verifying variables
 	mustBe.notNegative.finite.number(someVal);
 	mustBe.notNegative.finite.int(someVal);
 
-	mustBe.positive.finite.int(someVal); 
-	//will be Error: "someVal mustBe.positive.finite.int! Given 0 (Number)"
+	mustBe.positive.finite.integer(someVal); 
+	//Error: "someVal mustBe.positive.finite.integer! Given 0 (Number)"
 ```
 
 ```js
