@@ -10,7 +10,7 @@ The module provides a set of assertion functions for verifying variables
 ## Usage
 
 ```
-	npm i must-be
+	npm i hkey-must-be
 ```
 
 ```js
