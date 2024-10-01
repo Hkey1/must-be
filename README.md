@@ -14,7 +14,7 @@ The module provides a set of assertion functions for verifying variables
 ```
 
 ```js
-	const mustBe  = require('must-be');
+	const mustBe  = require('hkey-must-be');
 	const someVal = 0;
 	
 	mustBe.number(someVal);
