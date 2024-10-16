@@ -1,3 +1,4 @@
+const AsyncFunction = (async () => {}).constructor;
 function givenClass(type, val){
 	if(!val || !val.constructor || !val.constructor.name || val.constructor.name===type){
 		return '('+type+')';
@@ -5,9 +6,18 @@ function givenClass(type, val){
 		return '('+type+':'+val.constructor.name+')';
 	}
 }
+
 function given(val){
 	if(val===undefined || val===null || val===false || val===true){
 		return ''+val;
+	} else if(typeof(val)==='function'){
+		let	displayType = 'Function'; 
+		if(val instanceof AsyncFunction){
+			displayType = 'AsyncFunction'; 
+		} else if(/^\s*class\s+/.test(val.toString())){
+			displayType = 'Class'; 
+		}
+		return val.name ? displayType+' '+val.name : 'Anonymous '+displayType;
 	} else if(typeof(val)==='string'){
 		const className = givenClass('String', val);
 		if(val.length===0){

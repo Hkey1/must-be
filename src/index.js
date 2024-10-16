@@ -2,6 +2,8 @@ const assert      = require('node:assert');
 const MustBeError = require('./MustBeError.js');
 const given       = require('./given.js');
 
+const AsyncFunction = (async () => {}).constructor;
+
 const combos012 = [
 	[0,1,2],
 	[0,2,1],
@@ -14,14 +16,14 @@ const combos012 = [
 function ucFirst(string) {
     return string.charAt(0).toUpperCase() + string.slice(1);
 }
+function isClass(val){
+	return /^\s*class\s+/.test(val.toString())
+}
 
 const is     = {};
 const mustBe = {is, MustBeError};
 
-//todo not NaN
-//Todo BigInt
-
-const functions = {
+const functions = [{
 	string               : val => typeof(val)==='string',
 	array                : val => typeof(val)==='object' && Array.isArray(val),
 	buffer               : val => val instanceof Buffer,
@@ -114,63 +116,95 @@ const functions = {
 	'notPositive.finite.integer'     : val => typeof(val)==='number' && !isNaN(val) && val<=0 && isFinite(val) && Math.round(val)===val,
 	'notPositive.finite.int'         : 'notPositive.finite.integer',
 	'notPositive.finite.number'      : val => typeof(val)==='number' && !isNaN(val) && val<=0 && isFinite(val),
-};
+	
+	'function'                       : val => typeof(val)==='function' && !isClass(val),
+	'async.function'                 : val => typeof(val)==='function' && !isClass(val) && val instanceof AsyncFunction,
+	'sync.function'                  : val => typeof(val)==='function' && !isClass(val) && !(val instanceof AsyncFunction),
+	'async'                          : val => !isClass(val) && (val instanceof AsyncFunction || val instanceof Promise),
+	'sync'                           : val => isClass(val)  || !(val instanceof AsyncFunction || val instanceof Promise),
+
+	'class'                          : val => typeof(val)==='function' && isClass(val),
+}, {
+	'class.extends'                  : (val, val2) => typeof(val)==='function' && isClass(val) && val.prototype instanceof val2,
+	'extends'                        : (val, val2) => (typeof(val)==='function' && isClass(val) && val.prototype instanceof val2) || (val instanceof val2),
+	'instanceof'                     : (val, val2) => (val instanceof val2), 
+	'oneOf'                          : (val, val2) => (val2.includes(val)),
+}];
+
+
+
+
+
 
 for(let i=1; i<=3; i++){
-	Object.entries(functions).forEach(([name,method])=>{
-		const parts = name.split('.');
-		if(parts.length!==i){
-			return;
-		}
-		const realName = typeof(method)==='string' ? method : name; 
-		const isFun    = functions[realName]; 			
-		assert(isFun);
-		if(typeof(isFun)!=='function'){
-			throw new Error('typeof(functions['+name+'=>'+realName+'])='+typeof(isFun)+'!==function');
-		}
-		assert(realName===name || realName in mustBe);
-		const mustFun  = function(val, valName=undefined, func=undefined){ //realName!==name ? mustBe[realName] : 
-			if(!isFun(val)){
-				throw new MustBeError('{0} mustBe.'+name+'! Given: '+given(val), valName, func||mustFun);
+	for(let len=0; len<=1; len++){
+		Object.entries(functions[len]).forEach(([name,method])=>{
+			const parts = name.split('.');
+			if(parts.length!==i){
+				return;
 			}
-		}
-		mustBe[name]  = mustFun;
-		is[name]      = isFun;
-		if(parts.length===2){
-			const [part0, part1]    = parts;
-
-			mustBe[part0][part1]         = mustFun;
-			mustBe[part1][part0]         = mustFun;
-			mustBe[part1+'_'+part0]      = mustFun;
-			mustBe[part0+'_'+part1]      = mustFun;
-			mustBe[part1+ucFirst(part0)] = mustFun;
-			mustBe[part0+ucFirst(part1)] = mustFun;
-			//console.log(part0,part1, typeof(is),  typeof(mustBe[part0]), typeof(is[part0]))
-			is[part0][part1]             = isFun;
-			is[part1][part0]             = isFun;
-			is[part1+'_'+part0]          = isFun;
-			is[part0+'_'+part1]          = isFun;
-			is[part1+ucFirst(part0)]     = isFun;			
-		} else if(parts.length===3){
-			combos012.forEach(([j0,j1,j2])=>{
-				const part0 = parts[j0];
-				const part1 = parts[j1];
-				const part2 = parts[j2];
-
-				if(!mustBe[part0]){
-					throw new Error('!mustBe['+part0+'] name='+name);
-				} else if(!mustBe[part0][part1]){
-					throw new Error('!mustBe['+part0+']['+part1+'] name='+name);
+			const realName = typeof(method)==='string' ? method : name; 
+			const isFun    = functions[len][realName]; 			
+			assert(isFun);
+			if(typeof(isFun)!=='function'){
+				throw new Error('typeof(functions['+name+'=>'+realName+'])='+typeof(isFun)+'!==function');
+			}
+			assert(realName===name || realName in mustBe);
+			const mustFun  = len===0 ? function(val, valName=undefined, func=undefined){ //realName!==name ? mustBe[realName] : 
+				if(!isFun(val)){
+					throw new MustBeError('{0} mustBe.'+name+'! Given: '+given(val), valName, func||mustFun);
 				}
-				
-				mustBe[part0][part1][part2]                 = mustFun;
-				mustBe[part0+'_'+part1+'_'+part2]           = mustFun;
-				mustBe[part0+ucFirst(part1)+ucFirst(part2)] = mustFun;
-				
-				is[part0][part1][part2]                 = isFun;
-				is[part0+'_'+part1+'_'+part2]           = isFun;
-				is[part0+ucFirst(part1)+ucFirst(part2)] = isFun;
-			});
-		}
-	})
+			} : function(val, val2, valName=undefined, func=undefined){  
+				if(!isFun(val, val2)){
+					throw new MustBeError('{0} mustBe.'+name+'(..., '+given(val2)+' )! Given: '+given(val), valName, func||mustFun);
+				}
+			};
+			mustBe[name]  = mustFun;
+			is[name]      = isFun;
+			if(parts.length===2){
+				const [part0, part1]    = parts;
+
+				mustBe[part0][part1]         = mustFun;
+				mustBe[part1][part0]         = mustFun;
+				mustBe[part1+'_'+part0]      = mustFun;
+				mustBe[part0+'_'+part1]      = mustFun;
+				mustBe[part1+ucFirst(part0)] = mustFun;
+				mustBe[part0+ucFirst(part1)] = mustFun;
+				//console.log(part0,part1, typeof(is),  typeof(mustBe[part0]), typeof(is[part0]))
+				is[part0][part1]             = isFun;
+				is[part1][part0]             = isFun;
+				is[part1+'_'+part0]          = isFun;
+				is[part0+'_'+part1]          = isFun;
+				is[part1+ucFirst(part0)]     = isFun;			
+			} else if(parts.length===3){
+				combos012.forEach(([j0,j1,j2])=>{
+					const part0 = parts[j0];
+					const part1 = parts[j1];
+					const part2 = parts[j2];
+
+					if(!mustBe[part0]){
+						throw new Error('!mustBe['+part0+'] name='+name);
+					} else if(!mustBe[part0][part1]){
+						throw new Error('!mustBe['+part0+']['+part1+'] name='+name);
+					}
+					
+					mustBe[part0][part1][part2]                 = mustFun;
+					mustBe[part0+'_'+part1+'_'+part2]           = mustFun;
+					mustBe[part0+ucFirst(part1)+ucFirst(part2)] = mustFun;
+					
+					is[part0][part1][part2]                 = isFun;
+					is[part0+'_'+part1+'_'+part2]           = isFun;
+					is[part0+ucFirst(part1)+ucFirst(part2)] = isFun;
+				});
+			}
+		})
+	}
 }
+
+mustBe.oneOf = function(val, val2, valName=undefined, func=undefined){  
+	if(!val2.includes(val)){
+		throw new MustBeError('{0} = '+given(val)+' MustBe.oneOf: '+val2.join(', '), valName, func||mustBe.oneOf);
+	}
+}
+
+module.exports = mustBe;
