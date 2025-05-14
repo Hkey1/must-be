@@ -201,9 +201,10 @@ for(let i=1; i<=3; i++){
 	}
 }
 
-mustBe.oneOf = function(val, val2, valName=undefined, func=undefined){  
-	if(!val2.includes(val)){
-		throw new MustBeError('{0} = '+given(val)+' MustBe.oneOf: '+val2.join(', '), valName, func||mustBe.oneOf);
+mustBe.oneOf = function(val, vals, valName=undefined, func=undefined){  
+	assert(Array.isArray(vals));
+	if(!vals.includes(val)){
+		throw new MustBeError('{0} = '+given(val)+' MustBe.oneOf: '+vals.join(', '), valName, func||mustBe.oneOf);
 	}
 }
 
