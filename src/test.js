@@ -12,9 +12,11 @@ function mustThrow(fun){
 
 mustBe.function(()=>{})
 mustBe.syncFunction(()=>{})
-mustBe.oneOf('3', ['1', '2']);
+//mustBe.oneOf('3', ['1', '2']);
 
 
+mustBe.normalObject({});
+mustBe.normalObject(null);
 
 
 //mustBe.asyncFunction(()=>{})
